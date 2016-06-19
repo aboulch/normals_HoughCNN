@@ -21,3 +21,7 @@ Boost: argument parsing (main.cpp)
 HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.ply -o output_file.ply
 
 Note: the file predict.lua should be next to the executable
+
+# Author
+
+[Alexandre Boulch](https://sites.google.com/site/boulchalexandre)
