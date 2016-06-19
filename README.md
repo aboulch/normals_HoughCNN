@@ -1,6 +1,13 @@
 # normals_HoughCNN
 Deep Learning for Robust Normal Estimation in Unstructured Point Clouds 
 
+# Paper
+
+Please acknowledge our the reference paper :
+
+"Deep Learning for Robust Normal Estimation in Unstructured Point Clouds " by Alexandre Boulch and Renaud Marlet, Symposium of Geometry Processing 2016, Computer Graphics Forum
+
+
 # Dependencies
 
 Eigen and nanoflann (assumed to be in the source folder)
