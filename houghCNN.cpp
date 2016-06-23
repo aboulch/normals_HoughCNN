@@ -52,9 +52,6 @@ using std::string;
 // OPENMP
 #include <omp.h>
 
-// BOOST
-#include <boost/filesystem.hpp>
-using boost::shared_ptr;
 
 // TORCH
 #include <THC/THC.h>

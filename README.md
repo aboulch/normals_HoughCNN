@@ -1,5 +1,5 @@
 # normals_HoughCNN
-Deep Learning for Robust Normal Estimation in Unstructured Point Clouds 
+Deep Learning for Robust Normal Estimation in Unstructured Point Clouds
 
 # Paper
 
@@ -12,9 +12,9 @@ Please acknowledge our the reference paper :
 
 Eigen and nanoflann (assumed to be in the source folder)
 
-PCL: ply read only (main.cpp)
+Torch and TH++ (from FbLuaLib), for installation see the FbLuaLib repository
 
-Boost: argument parsing (main.cpp)
+The code is NVIDIA GPU dependent.
 
 # Usage
 

@@ -13,14 +13,6 @@ set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/lib/x86_64-linux-gnu/")
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/local/cuda/lib64/")
 include_directories(/usr/local/cuda/include)
 
-#############################
-## PCL
-#############################
-find_package(PCL REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
 ############################
 ## OPENMP
 ############################
@@ -32,11 +24,6 @@ if(UNIX)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif(UNIX)
 
-#############################
-## BOOST
-#############################
-FIND_PACKAGE( Boost 1.40 COMPONENTS program_options REQUIRED )
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 #################
 ## LUA LIB
@@ -55,7 +42,7 @@ set(PROJECT_LINK_LIB ${PROJECT_LINK_LIB} ${Torch_INSTALL_LIB})
 LINK_DIRECTORIES("/usr/local/lib")
 
 
-add_executable(HoughCNN_Exec 
+add_executable(HoughCNN_Exec
 main.cpp
 houghCNN.cpp
 houghCNN.h
@@ -64,5 +51,3 @@ pc_io.h
 timeMeasure.cpp
 timeMeasure.h)
 target_link_libraries(HoughCNN_Exec ${EXTRA_LIBS} ${Boost_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_LINK_LIB} thpp TH luaT THC  )
-
-

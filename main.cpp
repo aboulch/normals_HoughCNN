@@ -24,7 +24,7 @@
  *  To use this software, you are subject to the dependencies license, these licenses
  *  applies to the dependency ONLY  and NOT this code.
  *  Please refer below to the web sites for license informations:
- *       PCL, BOOST,NANOFLANN, EIGEN, LUA TORCH
+ *       NANOFLANN, EIGEN, LUA TORCH
  *
  * When using the software please aknowledge the  corresponding publication:
  * "Deep Learning for Robust Normal Estimation in Unstructured Point Clouds "
@@ -48,52 +48,102 @@ using namespace std;
 #include "houghCNN.h"
 
 
-#include "boost/program_options.hpp"
-
 int main(int argc, char** argv){
 	srand (time(NULL));
-	try{
 
 		string input = "";
-		string output = "out.ply";
+		string output = "out.xyz";
 		int nc = 1;
 		int k = 100;
 		int s = 33;
 		int T = 1000;
 		bool ua = false; // use aniso
-		string model = "";
+		string model = "-1";
+		int k_density = 5;
 
-		// parse options
-		namespace po = boost::program_options;
-		po::options_description desc("Options");
-		desc.add_options()
-			("input,i",po::value<string>(&input)->required(), "input model ply")
-			("output,o",po::value<string>(&output), "output model ply")
-			("size,k",po::value<int>(&k) , "neighborhood size")
-			("imSize,s", po::value<int>(&s), "accumulator size")
-			("nbrT,t", po::value<int>(&T), "nbr T")
-			("model,m",po::value<string>(&model)->required(), "model torch")
-			("nbrScales,c", po::value<int>(&nc), "nbr of scales")
-			("aniso,a", po::value<bool>(&ua), "use aniso")
-			;
-		po::variables_map vm;
-		po::store(po::parse_command_line(argc, argv, desc),vm);
-		po::notify(vm);
+		int c;
+
+        opterr = 0;
+        while ((c = getopt (argc, argv, "i:o:m:k:t:d:p:r:a:e:")) != -1)
+        switch (c){
+            case 'i':{
+                input = optarg;
+                break;
+            }
+            case 'o':{
+                output = optarg;
+                break;
+            }
+            case 'm':{
+                model = optarg;
+                break;
+            }
+            case 'k':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> k;
+                break;
+            }
+            case 't':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> T;
+                break;
+            }
+            case 'd':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> ua;
+                break;
+            }
+            case 'c':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> nc;
+                break;
+            }
+            case 's':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> s;
+                break;
+            }
+            case 'e':{
+                stringstream sstr("");
+                sstr << optarg;
+                sstr >> k_density;
+                break;
+            }
+            default:{
+                cout << "Unknown option character" << endl;
+                return 1;
+                break;
+            }
+            }
+
+        if(input=="-1"){
+            cout << "Error need input file" << endl;
+            return 1;
+        }
+        if(model=="-1"){
+            cout << "Error need input file" << endl;
+            return 1;
+        }
 
 		if(nc!=1 && nc!=3 && nc!=5){
 			cerr << "Error bad number of scales, should be 1,3 or 5" << endl;
 		}
 
 		// load the point cloud
-		MatrixX3 pc, normals_gt, normals;
-		ply_load(input,pc, normals_gt);
+		MatrixX3 pc, normals;
+		pc_load(input,pc);
 
 		// create the estimator
 		NormEst ne(pc,normals);
 
 		ne.access_A() = s; // accumulator size
 		ne.access_T() = T; // number of hypothesis
-		ne.access_K_aniso() = 5; // anisotropy nbr of neighborhoods
+		ne.access_K_aniso() = k_density; // anisotropy nbr of neighborhoods
 
 		// neighborhoods
 		std::vector<int> Ks;
@@ -112,13 +162,9 @@ int main(int argc, char** argv){
 		ne.estimate(model,Ks, ua);
 
 		// save the point cloud
-		ply_save(output,pc, normals);
+		pc_save(output,pc, normals);
 
-	}catch(std::exception& e){
-		std::cerr << "Unhandled Exception reached the top of main: "
-				<< e.what() << ", application will now exit " << std::endl;
-		return 1;
-	}
+
 
 	return 0;
 }
