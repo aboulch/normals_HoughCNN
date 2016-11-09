@@ -126,7 +126,7 @@ int main(int argc, char** argv){
             return 1;
         }
         if(model=="-1"){
-            cout << "Error need input file" << endl;
+            cout << "Error need model file" << endl;
             return 1;
         }
 
