@@ -138,6 +138,12 @@ int main(int argc, char** argv){
 		MatrixX3 pc, normals;
 		pc_load(input,pc);
 
+		cout << "Point cloud size: " << pc.rows() << endl;
+		if(pc.rows() == 0){
+			cerr << "Error empty point cloud, check the path of the input file" << endl;
+			return 1;
+		}
+
 		// create the estimator
 		NormEst ne(pc,normals);
 
