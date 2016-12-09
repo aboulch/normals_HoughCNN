@@ -17,7 +17,7 @@ The code is NVIDIA GPU dependent.
 
 # Pretrained networks
 
-Pretrained networks can be found at [webpage](https://sites.google.com/site/boulchalexandre/publications/deep-learning-for-robust-normal-estimation-in-unstructured-point-clouds).
+Pretrained networks can be found at [webpage](https://sites.google.com/view/boulch/publications/2016_cgf_sgp_deepnormals).
 3 models are proposed for download, 1, 3 and 5 scales (the models of the paper).
 
 # Usage
