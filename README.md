@@ -36,4 +36,4 @@ HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz
 
 # Author
 
-[Alexandre Boulch](https://sites.google.com/site/boulchalexandre)
+[Alexandre Boulch](https://sites.google.com/view/boulch)
