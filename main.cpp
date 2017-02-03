@@ -49,8 +49,10 @@ using namespace std;
 
 void printHelp()
 {
-  cout << " -i <input file> -o <output file> -c <number of scales 1,3,5> -k <neighborhood number of points> -t <number of hypothesis> -d <use_anisotropy_flag> -m <model filename (has to be consistent with the number of scales)>"
-  << "-s <accumulator size> -e <anisotropy nbr of neighborhoods>" << endl;
+  cout << "Usage: <executable>\n -i\t <input file>\n -o\t <output file>\n -c\t <number of scales 1,3,5>\n"
+       << " -m\t <model filename (has to be consistent with the number of scales)>\n"
+       << " -k\t <neighborhood number of points>\n -t\t <number of hypothesis>\n -d\t <use_anisotropy_flag>\n"
+       << " -s\t <accumulator size>\n -e\t <anisotropy nbr of neighborhoods>\n" << endl;
 }
 
 int main(int argc, char** argv){
