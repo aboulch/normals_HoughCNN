@@ -47,6 +47,13 @@ using namespace std;
 
 #include "houghCNN.h"
 
+void printHelp()
+{
+  cout << "Usage: <executable>\n -i\t <input file>\n -o\t <output file>\n -c\t <number of scales 1,3,5>\n"
+       << " -m\t <model filename (has to be consistent with the number of scales)>\n"
+       << " -k\t <neighborhood number of points>\n -t\t <number of hypothesis>\n -d\t <use_anisotropy_flag>\n"
+       << " -s\t <accumulator size>\n -e\t <anisotropy nbr of neighborhoods>\n" << endl;
+}
 
 int main(int argc, char** argv){
 	srand (time(NULL));
@@ -62,26 +69,27 @@ int main(int argc, char** argv){
 		int k_density = 5;
 
 		int c;
+		
 
         opterr = 0;
-        while ((c = getopt (argc, argv, "i:o:m:k:t:d:p:r:a:e:")) != -1)
+        while ((c = getopt (argc, argv, "i:o:m:k:t:d:c:s:e")) != -1)
         switch (c){
             case 'i':{
-                input = optarg;
+                input = optarg; // input file
                 break;
             }
             case 'o':{
-                output = optarg;
+                output = optarg; // output file
                 break;
             }
             case 'm':{
-                model = optarg;
+                model = optarg; 
                 break;
             }
             case 'k':{
                 stringstream sstr("");
                 sstr << optarg;
-                sstr >> k;
+                sstr >> k; // neighborhoods
                 break;
             }
             case 't':{
@@ -123,10 +131,12 @@ int main(int argc, char** argv){
 
         if(input=="-1"){
             cout << "Error need input file" << endl;
+	    printHelp();
             return 1;
         }
         if(model=="-1"){
             cout << "Error need model file" << endl;
+	    printHelp();
             return 1;
         }
 
@@ -136,7 +146,7 @@ int main(int argc, char** argv){
 
 		// load the point cloud
 		MatrixX3 pc, normals;
-		pc_load(input,pc);
+		pc_load(input, pc);
 
 		cout << "Point cloud size: " << pc.rows() << endl;
 		if(pc.rows() == 0){
@@ -145,7 +155,7 @@ int main(int argc, char** argv){
 		}
 
 		// create the estimator
-		NormEst ne(pc,normals);
+		NormEst ne(pc, normals);
 
 		ne.access_A() = s; // accumulator size
 		ne.access_T() = T; // number of hypothesis
@@ -165,10 +175,10 @@ int main(int argc, char** argv){
 		}
 
 		// estimation
-		ne.estimate(model,Ks, ua);
+		ne.estimate(model, Ks, ua);
 
 		// save the point cloud
-		pc_save(output,pc, normals);
+		pc_save(output, pc, normals);
 
 
 

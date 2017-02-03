@@ -22,17 +22,19 @@ Pretrained networks can be found at [webpage](https://sites.google.com/view/boul
 
 # Usage
 
-HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.xyz
+HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.xyz -c number_of_scales
 
 Note: the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
 
-Note: the file predict.lua should be next to the executable
+Note: the file predict.lua should be next to the executable.
+
+Note: number of scales has to be consistent with the used model (there are separate models for different scales).
 
 # Example
 
 A file cube_100k is located in the test directory.
 
-HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz
+HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz -c scale
 
 # Author
 
