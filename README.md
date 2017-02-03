@@ -22,7 +22,7 @@ Pretrained networks can be found at [webpage](https://sites.google.com/view/boul
 
 # Usage
 
-HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.xyz -c <number of scales>
+HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.xyz -c number_of_scales
 
 Note: the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
 
@@ -34,7 +34,7 @@ Note: number of scales has to be consistent with the used model (there are separ
 
 A file cube_100k is located in the test directory.
 
-HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz -c <scale (1,3,5)>
+HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz -c scale
 
 # Author
 
