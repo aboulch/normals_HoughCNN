@@ -40,6 +40,10 @@ The **cube_100k.xyz** file is located in the test directory.
 
 **Note:** number of scales has to be consistent with the used model (there are separate models for different scales).
 
+# License
+
+The code is released under GPLv3 license. For commercial utilisation please contact the authors.
+The license is [here](LICENSE.md).
 
 # Previous versions
 
