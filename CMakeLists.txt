@@ -33,17 +33,13 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(HoughCNN_project)
 
-set(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_BUILD_TYPE Release)
 
-############################
-## OUTPUT DIRECTORIES
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin )
 set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib )
 
-############################
-## CUDA
-FIND_PACKAGE(CUDA REQUIRED)
-include_directories("${CUDA_INCLUDE_DIRS}")
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "/usr/lib/x86_64-linux-gnu/")
+
 
 ############################
 ## OPENMP
@@ -55,21 +51,20 @@ if(UNIX)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif(UNIX)
 
-#################
-## TORCH
-FIND_PACKAGE(Torch REQUIRED)
-INCLUDE_DIRECTORIES("${Torch_INSTALL_INCLUDE}/TH")
-LINK_DIRECTORIES("${Torch_INSTALL_LIB}")
-set(PROJECT_LINK_LIB ${PROJECT_LINK_LIB} ${Torch_INSTALL_LIB})
+include_directories("include")
 
-####################
-## EXECUTABLE
-add_executable(HoughCNN_Exec
-main.cpp
-houghCNN.cpp
-houghCNN.h
-pc_io.cpp
-pc_io.h
-timeMeasure.cpp
-timeMeasure.h)
-target_link_libraries( HoughCNN_Exec TH luajit luaT )
+
+# Make the scripts available in the 'cmake' directory available for the
+# 'include()' command, 'find_package()' command.
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
+
+# Include the CMake script UseCython.cmake.  This defines add_cython_module().
+# Instruction for use can be found at the top of cmake/UseCython.cmake.
+include( UseCython )
+
+include_directories("python")
+
+### build the libraies in the package directory
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/python")
+
+add_subdirectory(src)

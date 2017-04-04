@@ -43,8 +43,6 @@
 
 using namespace std;
 
-#include "pc_io.h"
-
 #include "houghCNN.h"
 
 void printHelp()
@@ -69,7 +67,7 @@ int main(int argc, char** argv){
 		int k_density = 5;
 
 		int c;
-		
+
 
         opterr = 0;
         while ((c = getopt (argc, argv, "i:o:m:k:t:d:c:s:e")) != -1)
@@ -83,7 +81,7 @@ int main(int argc, char** argv){
                 break;
             }
             case 'm':{
-                model = optarg; 
+                model = optarg;
                 break;
             }
             case 'k':{
@@ -146,20 +144,20 @@ int main(int argc, char** argv){
 
 		// load the point cloud
 		MatrixX3 pc, normals;
-		pc_load(input, pc);
+
+		// create the estimator
+		NormEst ne(pc, normals);
+        ne.loadXYZ(input);
 
 		cout << "Point cloud size: " << pc.rows() << endl;
-		if(pc.rows() == 0){
+		if(ne.pc().rows() == 0){
 			cerr << "Error empty point cloud, check the path of the input file" << endl;
 			return 1;
 		}
 
-		// create the estimator
-		NormEst ne(pc, normals);
-
-		ne.access_A() = s; // accumulator size
-		ne.access_T() = T; // number of hypothesis
-		ne.access_K_aniso() = k_density; // anisotropy nbr of neighborhoods
+		ne.set_A(s); // accumulator size
+		ne.set_T(T); // number of hypothesis
+		ne.set_K_aniso(k_density); // anisotropy nbr of neighborhoods
 
 		// neighborhoods
 		std::vector<int> Ks;
@@ -175,10 +173,10 @@ int main(int argc, char** argv){
 		}
 
 		// estimation
-		ne.estimate(model, Ks, ua);
+		//ne.estimate(model, Ks, ua);
 
 		// save the point cloud
-		pc_save(output, pc, normals);
+		ne.saveXYZ(output);
 
 
 

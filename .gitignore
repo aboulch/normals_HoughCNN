@@ -1,4 +1,8 @@
 nanoflann.hpp
-Eigen/*
-build/*
+Eigen/
+build/
 *~
+*.so
+__pycache__/
+*.pyc
+*local*

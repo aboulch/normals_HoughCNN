@@ -9,32 +9,39 @@ Please acknowledge our the reference paper :
 
 # Dependencies
 
-Eigen and nanoflann (assumed to be in the source folder)
+- Eigen and nanoflann (assumed to be in the include folder)
+- CMake
+- Cython
+- PyTorch
 
-Torch
-
-The code is NVIDIA GPU dependent.
+GPU support: NVIDIA GPU
 
 # Pretrained networks
 
 Pretrained networks can be found at [webpage](https://sites.google.com/view/boulch/publications/2016_cgf_sgp_deepnormals).
 3 models are proposed for download, 1, 3 and 5 scales (the models of the paper).
 
+# Building the python library
+
+    cd path_to_repository
+    mkdir build
+    cd build
+    cmake ..
+    make
+
+It will build a library in the python folder of the repository.
+
 # Usage
 
-HoughCNN_Exec [options] -m path_to_the_torch_model -i input_file.xyz -c number_of_scales
+Once the library is built. You can use the **estimation_script.py** to test the estimation.
+The **cube_100k.xyz** file is located in the test directory.
 
-Note: the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
+**Note:** the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
 
-Note: the file predict.lua should be next to the executable.
+**Note:** number of scales has to be consistent with the used model (there are separate models for different scales).
 
-Note: number of scales has to be consistent with the used model (there are separate models for different scales).
 
-# Example
-
-A file cube_100k is located in the test directory.
-
-HoughCNN_Exec [options] -m path_to_the_torch_model -i test/cube_100k.xyz -c scale
+# Previous versions
 
 # Author
 

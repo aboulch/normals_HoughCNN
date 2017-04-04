@@ -34,12 +34,6 @@
 
 #include "houghCNN.h"
 
-#include "nanoflann.hpp"
-typedef typename nanoflann::KDTreeEigenMatrixAdaptor< MatrixX3 > kd_tree; //a row is a point
-
-// measuring execution time
-#include "timeMeasure.h"
-
 // STL
 #include <iostream>
 #include <time.h>
@@ -53,37 +47,14 @@ using std::string;
 #include <omp.h>
 
 
-// TORCH
-#include <THC/THC.h>
-#include <TH.h>
-#include <THTensor.h>
-#include <luaT.h>
-extern "C" {
- #include "lua.h"
- #include "lualib.h"
- #include "lauxlib.h"
+typedef typename nanoflann::KDTreeEigenMatrixAdaptor< MatrixX3 > kd_tree;
+
+int NormEst::size(){
+	return _pc.rows();
 }
 
-
-class HoughAccum{
-public:
-	VectorX accum;
-	MatrixX3 accum_vec;
-	Matrix3 P;
-
-	int A;
-
-};
-
-
-THCState* getCutorchState(lua_State* L)
-{
-    lua_getglobal(L, "cutorch");
-    lua_getfield(L, -1, "getState");
-    lua_call(L, 0, 1);
-    THCState *state = (THCState*) lua_touserdata(L, -1);
-    lua_pop(L, 2);
-    return state;
+int NormEst::size_normals(){
+	return _normals.rows();
 }
 
 inline void fill_accum_aniso(HoughAccum& hd, std::vector<long int>& nbh, int nbh_size,
@@ -99,7 +70,7 @@ inline void fill_accum_aniso(HoughAccum& hd, std::vector<long int>& nbh, int nbh
 	int& A = hd.A;
 
 	//init
-	A = est->access_A();
+	A = est->get_A();
 	accum_vec = MatrixX3::Zero(A*A,3);
 	accum = VectorX::Zero(A*A);
 	Vector3 mean = Vector3::Zero();
@@ -107,7 +78,7 @@ inline void fill_accum_aniso(HoughAccum& hd, std::vector<long int>& nbh, int nbh
 
 	//other refs
 	const MatrixX3& _pc = est->pc();
-	const int& T = est->access_T();
+	const int T = est->get_T();
 	const vector<unsigned int>& rand_ints = est->rand_ints;
 
 
@@ -267,7 +238,7 @@ inline void fill_accum_not_aniso(HoughAccum& hd, std::vector<long int>& nbh, int
 	int& A = hd.A;
 
 	//init
-	A = est->access_A();
+	A = est->get_A();
 	accum_vec = MatrixX3::Zero(A*A,3);
 	accum = VectorX::Zero(A*A);
 	Vector3 mean = Vector3::Zero();
@@ -275,7 +246,7 @@ inline void fill_accum_not_aniso(HoughAccum& hd, std::vector<long int>& nbh, int
 
 	//other refs
 	const MatrixX3& _pc = est->pc();
-	const int& T = est->access_T();
+	const int T = est->get_T();
 	const vector<unsigned int>& rand_ints = est->rand_ints;
 
 	//regression
@@ -398,55 +369,33 @@ inline void sort_indices_by_distances(vector<long int>& indices, const vector<do
     }
 }
 
-int NormEst::estimate(const std::string& model, const vector<int>& Ks, bool use_aniso){
+void NormEst::initialize(){
 
-
-    //int batchSize = 256;
-
-    int maxK = 0;
+    // compute max K
+    maxK = 0;
     for(int i=0; i<Ks.size(); i++)
         if(maxK<Ks[i])
             maxK = Ks[i];
 
-	// initiate the clock
-	TMeasure clock;
-	clock.tic();
-
+    // compute the randints
 	int nbr = 1e7;
 	rand_ints.resize(nbr);
 	for(int i=0; i<nbr; i++){
 		rand_ints[i]  = rand();
 	}
 
-	// start lua
-    cout << "  --> start lua" << endl;
-	lua_State* L = luaL_newstate();
-	luaL_openlibs(L);
-    cout << "  --> lua do file" << endl;
-	if (luaL_dofile(L,"./predict.lua") != 0)
-	{
-		std::cout<<"Load Lua File Error"<<std::endl;
-		return -1;
-	}
-
-    cout << "  --> Load model" << endl;
-	lua_getglobal(L,"load_model");    //testTensor
-	lua_pushstring(L,model.c_str());
-	lua_call(L,1,0);
-
-
-	// get the number of points
+	// resize the normals
 	int N = _pc.rows();
-
-	// resize the normal vector
 	_normals.resize(N,3);
 
 	// create the tree
-    cout << "  --> create tree" << endl;
-	kd_tree tree(3, _pc, 10 /* max leaf */ );
-	tree.index->buildIndex();
+    if(is_tree_initialized){
+        delete tree;
+    }
+	tree = new kd_tree(3, _pc, 10 /* max leaf */ );
+	tree->index->buildIndex();
 
-    cout << "Estimate proba" << endl;
+    // estimate the probas
     if(use_aniso){
     	proba_vector.resize(N);
         #pragma omp parallel for
@@ -457,7 +406,7 @@ int NormEst::estimate(const std::string& model, const vector<int>& Ks, bool use_
     		//get the neighborhood
     		vector<long int> indices;
     		vector<double> distances;
-    		searchKNN(tree,pt,K_aniso, indices, distances);
+    		searchKNN(*tree,pt,K_aniso, indices, distances);
 
     		float md = 0;
     		for(int i=0; i<distances.size(); i++)
@@ -468,109 +417,160 @@ int NormEst::estimate(const std::string& model, const vector<int>& Ks, bool use_
     	}
     }
 
+    randPos = 0;
+}
 
-	// init random position
-	unsigned int randPos = 0;
+void NormEst::get_batch(int batch_id, int batch_size, double* array) { // array batch_size, Ks.size, A, A
 
-    cout << "  -->  Iterate" << endl;
+    accums.resize(batch_size);
 
-    // batchSize and container
-    for(int batch_id=0; batch_id<N; batch_id+=batch_size){
+    // create forward tensor
+    unsigned int randPos2 = randPos;
+    //#pragma omp parallel for firstprivate(randPos2)
+    for(int pt_id=batch_id; pt_id<batch_id+batch_size; pt_id++){
+        if(pt_id>=_pc.rows()) continue;
 
-        vector<HoughAccum> accums(batch_size);
-        vector<float> data(batch_size*Ks.size()*A*A);
+        //reference to the current point
+        const Vector3& pt = _pc.row(pt_id);
 
-        // create forward tensor
-        int numElements = batch_size*Ks.size()*A*A;
-        THFloatStorage *mystorage =  THFloatStorage_newWithData(&data[0], numElements);
-        THFloatTensor* mytensor = THFloatTensor_newWithStorage1d(mystorage, 0, numElements, 1);
-        THFloatTensor_resize4d(mytensor, batch_size, Ks.size(), A, A);
+        //get the max neighborhood
+        vector<long int> indices;
+        vector<double> distances;
+        searchKNN(*tree,pt,maxK, indices, distances);
 
-        #pragma omp parallel for firstprivate(randPos)
-        for(int pt_id=batch_id; pt_id<batch_id+batch_size; pt_id++){
-            if(pt_id>=N) continue;
+        // for knn search distances appear to be sorted
+        sort_indices_by_distances(indices, distances);
 
-            const Vector3& pt = _pc.row(pt_id); //reference to the current point
-
-
-
-            //get the max neighborhood
-            vector<long int> indices;
-            vector<double> distances;
-            searchKNN(tree,pt,maxK, indices, distances);
-
-
-            // for knn search distances appear to be sorted
-            sort_indices_by_distances(indices, distances);
-
-            if(use_aniso){
-                for(int k_id=0; k_id<Ks.size(); k_id++){
-                    //fill the patch and get the rotation matrix
-                    HoughAccum hd;
-                    if(k_id==0){
-                        fill_accum_aniso(hd,indices,Ks[k_id], this, randPos, proba_vector);
-                        accums[pt_id-batch_id] = hd;
-                    }else{
-                        fill_accum_aniso(hd,indices,Ks[k_id], this, randPos,  proba_vector, false, accums[pt_id-batch_id].P);
-                    }
-
-                    for(int i=0; i<A*A; i++){
-                        data[A*A*Ks.size()*(pt_id-batch_id)+ A*A*k_id +i] = hd.accum[i];
-                    }
+        if(use_aniso){
+            for(int k_id=0; k_id<Ks.size(); k_id++){
+                //fill the patch and get the rotation matrix
+                HoughAccum hd;
+                if(k_id==0){
+                    fill_accum_aniso(hd,indices,Ks[k_id], this, randPos2, proba_vector);
+                    accums[pt_id-batch_id] = hd;
+                }else{
+                    fill_accum_aniso(hd,indices,Ks[k_id], this, randPos2,  proba_vector, false, accums[pt_id-batch_id].P);
                 }
-            }else{
 
-                for(int k_id=0; k_id<Ks.size(); k_id++){
-                    //fill the patch and get the rotation matrix
-                    HoughAccum hd;
-                    if(k_id==0){
-                        fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos);
-                        accums[pt_id-batch_id] = hd;
-                    }else{
-                        fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos, false, accums[pt_id-batch_id].P);
-                    }
+                for(int i=0; i<A*A; i++){
+                    array[A*A*Ks.size()*(pt_id-batch_id)+ A*A*k_id +i] = hd.accum[i];
+                }
+            }
+        }else{
 
-                    for(int i=0; i<A*A; i++){
-                        data[A*A*Ks.size()*(pt_id-batch_id)+ A*A*k_id +i] = hd.accum[i];
-                    }
+            for(int k_id=0; k_id<Ks.size(); k_id++){
+                //fill the patch and get the rotation matrix
+                HoughAccum hd;
+                if(k_id==0){
+                    fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos);
+                    accums[pt_id-batch_id] = hd;
+                }else{
+                    fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos, false, accums[pt_id-batch_id].P);
+                }
+
+                for(int i=0; i<A*A; i++){
+                    array[A*A*Ks.size()*(pt_id-batch_id)+ A*A*k_id +i] = hd.accum[i];
                 }
             }
         }
-
-        // forward
-    	lua_getglobal(L,"estimate_batch");    //testTensor
-    	luaT_pushudata(L, (void *)mytensor, "torch.FloatTensor");
-    	lua_call(L,1,1);
-
-        // get the results for batch
-        THFloatTensor* z = (THFloatTensor*)luaT_toudata(L, -1, "torch.FloatTensor");
-        lua_pop(L, 1);
-        THFloatStorage *storage_res =  z->storage;
-        float* result = storage_res->data;
-
-        // fill the normal
-        #pragma omp parallel for
-        for(int pt_id=batch_id; pt_id<batch_id+batch_size; pt_id++){
-            if(pt_id>=N) continue;
-
-    		// compute final normal
-    		Vector3 nl(result[2*(pt_id-batch_id)],result[2*(pt_id-batch_id)+1],0);
-    		double squaredNorm = nl.squaredNorm();
-    		if(squaredNorm>1){
-    			nl.normalize();
-    		}else{
-    			nl[2] = sqrt(1.-squaredNorm);
-    		}
-    		nl = accums[pt_id-batch_id].P.inverse()*nl;
-    		nl.normalize();
-
-    		// store the normals
-    		_normals.row(pt_id) =nl;
-    	}
-
     }
 
-	clock.tac();
-	return clock.elapsed();
+}
 
+void NormEst::set_batch(int batch_id, int batch_size, double* array){
+
+    // fill the normal
+    #pragma omp parallel for
+    for(int pt_id=batch_id; pt_id<batch_id+batch_size; pt_id++){
+        if(pt_id>=_pc.rows()) continue;
+
+        // compute final normal
+        Vector3 nl(array[2*(pt_id-batch_id)],array[2*(pt_id-batch_id)+1],0);
+        double squaredNorm = nl.squaredNorm();
+        if(squaredNorm>1){
+            nl.normalize();
+        }else{
+            nl[2] = sqrt(1.-squaredNorm);
+        }
+        nl = accums[pt_id-batch_id].P.inverse()*nl;
+        nl.normalize();
+
+        // store the normals
+        _normals.row(pt_id) =nl;
+    }
+}
+
+
+
+void NormEst::get_points(double* array, int m, int n) {
+
+    int i, j ;
+    int index = 0 ;
+
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            array[index] = _pc(i,j);
+            index ++ ;
+            }
+        }
+    return ;
+}
+
+void NormEst::get_normals(double* array, int m, int n) {
+
+    int i, j ;
+    int index = 0 ;
+
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            array[index] = _normals(i,j);
+            index ++ ;
+            }
+        }
+    return ;
+}
+
+void NormEst::set_points(double* array, int m, int n){
+    // resize the point cloud
+    _pc.resize(m,3);
+
+    // fill the point cloud
+    int i, j ;
+    int index = 0 ;
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            _pc(i,j) = array[index];
+            index ++ ;
+        }
+    }
+    return ;
+}
+
+void NormEst::set_normals(double* array, int m, int n){
+    // resize the point cloud
+    _normals.resize(m,3);
+
+    // fill the point cloud
+    int i, j ;
+    int index = 0 ;
+    for (i = 0; i < m; i++) {
+        for (j = 0; j < n; j++) {
+            _normals(i,j) = array[index];
+            index ++ ;
+        }
+    }
+    return ;
+}
+
+
+void NormEst::set_Ks(int* array, int m){
+	Ks.resize(m);
+	for (int i = 0; i < m; i++){
+		Ks[i] = array[i];
+	}
+}
+void NormEst::get_Ks(int* array, int m){
+    for (int i = 0; i < m; i++){
+		array[i] = Ks[i];
+	}
 }
