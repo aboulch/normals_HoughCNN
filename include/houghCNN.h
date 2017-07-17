@@ -153,6 +153,8 @@ public:
 		ofs.close();
 	}
 
+
+	int generate_training_accum_random_corner(int noise_val, int n_points, double* array, double* array_gt);
 };
 
 

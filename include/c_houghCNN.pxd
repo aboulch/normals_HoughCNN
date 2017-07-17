@@ -55,3 +55,5 @@ cdef extern from "houghCNN.h":
         void get_Ks(int*,int)
         void set_Ks(int*, int)
         int get_Ks_size()
+
+        int generate_training_accum_random_corner(int,int, double*, double*)

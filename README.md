@@ -16,10 +16,7 @@ Please acknowledge our the reference paper :
 
 GPU support: NVIDIA GPU
 
-# Pretrained networks
 
-Pretrained networks can be found at [webpage](https://sites.google.com/view/boulch/publications/2016_cgf_sgp_deepnormals).
-3 models are proposed for download, 1, 3 and 5 scales (the models of the paper).
 
 # Building the python library
 
@@ -31,21 +28,33 @@ Pretrained networks can be found at [webpage](https://sites.google.com/view/boul
 
 It will build a library in the python folder of the repository.
 
-# Usage
+# Pretrained networks
 
-Once the library is built. You can use the **estimation_script.py** to test the estimation.
+Pretrained networks can be found at [webpage](https://sites.google.com/view/boulch/publications/2016_cgf_sgp_deepnormals).
+3 models are proposed for download, 1, 3 and 5 scales (the models of the paper).
+
+### Usage
+
+Once the library is built. You can use the **estimation_script_pretrained.py** to test the estimation.
 The **cube_100k.xyz** file is located in the test directory.
 
 **Note:** the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
 
 **Note:** number of scales has to be consistent with the used model (there are separate models for different scales).
 
+# Training from scratch
+
+We provide the scripts for generating a training set and training a new model.
+The script **generate_training_set.py** performs theses task.
+You can choose the scale number (1, 3 or 5) as in the paper.
+At inference, please use the **estimation_script_trained.py** instead of **estimation_script_pretrained.py**, the only difference is that the mean is now saved in a numpy format.
+
+*Note*: This is not the original training script from the related paper, but it should be similar. If you spot malfunctioning code or unexpected behavior, please contact the author.
+
 # License
 
 The code is released under GPLv3 license. For commercial utilisation please contact the authors.
 The license is [here](LICENSE.md).
-
-# Previous versions
 
 # Author
 

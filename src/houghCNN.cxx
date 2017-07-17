@@ -484,8 +484,6 @@ void NormEst::set_batch(int batch_id, int batch_size, double* array){
     }
 }
 
-
-
 void NormEst::get_points(double* array, int m, int n) {
 
     int i, j ;
@@ -546,15 +544,322 @@ void NormEst::set_normals(double* array, int m, int n){
     return ;
 }
 
-
 void NormEst::set_Ks(int* array, int m){
 	Ks.resize(m);
 	for (int i = 0; i < m; i++){
 		Ks[i] = array[i];
 	}
 }
+
 void NormEst::get_Ks(int* array, int m){
     for (int i = 0; i < m; i++){
 		array[i] = Ks[i];
 	}
+}
+
+//
+// training set generation
+//
+
+void create_angle(Eigen::MatrixX3d& points, Eigen::MatrixX3d& normals, double angle, int nb_points){
+	//init the rand machine
+
+	//create the rotation matrices
+	Eigen::Matrix3d Rot0_inv_mem;
+	Eigen::Matrix3d Rot0, Rot1,Rot2;
+	Eigen::Vector3d N0(0,0,1), N1(0,0,1), N2(0,0,1);
+	{
+		Eigen::Vector3d ax(0,-1,0);
+		Eigen::Matrix3d u_cross;
+		u_cross << 0, -ax(2), ax(1),
+				ax(2),0,-ax(0),
+				-ax(1),ax(0),0;
+		Eigen::Matrix3d u_cov;
+		u_cov  = ax * ax.transpose();
+		Rot0 = cos(angle)*Eigen::Matrix3d::Identity() + sin(angle)*u_cross + (1-cos(angle))*u_cov;
+		Rot0_inv_mem = Rot0.inverse();
+		N0 = Rot0*N0;
+	}
+	{
+		Eigen::Vector3d ax(cos(5*M_PI/6),sin(5*M_PI/6),0);
+		Eigen::Matrix3d u_cross;
+		u_cross << 0, -ax(2), ax(1),
+				ax(2),0,-ax(0),
+				-ax(1),ax(0),0;
+		Eigen::Matrix3d u_cov;
+		u_cov  = ax * ax.transpose();
+		Rot1 = cos(angle)*Eigen::Matrix3d::Identity() + sin(angle)*u_cross + (1-cos(angle))*u_cov;
+		N1 = Rot1*N1;
+	}
+	{
+		Eigen::Vector3d ax(cos(M_PI/6),sin(M_PI/6),0);
+		Eigen::Matrix3d u_cross;
+		u_cross << 0, -ax(2), ax(1),
+				ax(2),0,-ax(0),
+				-ax(1),ax(0),0;
+		Eigen::Matrix3d u_cov;
+		u_cov  = ax * ax.transpose();
+		Rot2 = cos(angle)*Eigen::Matrix3d::Identity() + sin(angle)*u_cross + (1-cos(angle))*u_cov;
+		N2 = Rot2*N2;
+	}
+
+	//fill the points
+	points.resize(nb_points,3);
+	for(int i=0; i<nb_points; i++){
+		int plane_id = rand()%3;
+		Eigen::Vector3d pt;
+		Eigen::Vector3d nl;
+		do{
+			switch(plane_id){
+			case 0:{
+				do{
+					double a = 2*(rand()+0.)/RAND_MAX-1;
+					double b = 2*(rand()+0.)/RAND_MAX-1;
+					pt=Eigen::Vector3d(a,b,0);
+					pt = Rot0*pt;
+				}while(pt.dot(N1)>0 || pt.dot(N2)>0);
+				break;
+			}
+			case 1:{
+				do{
+					double a = 2*(rand()+0.)/RAND_MAX-1;
+					double b = 2*(rand()+0.)/RAND_MAX-1;
+					pt=Eigen::Vector3d(a,b,0);
+					pt = Rot1*pt;
+				}while(pt.dot(N0)>0 || pt.dot(N2)>0);
+				break;
+			}
+			case 2:{
+				do{
+					double a = 2*(rand()+0.)/RAND_MAX-1;
+					double b = 2*(rand()+0.)/RAND_MAX-1;
+					pt=Eigen::Vector3d(a,b,0);
+					pt = Rot2*pt;
+				}while(pt.dot(N0)>0 || pt.dot(N1)>0);
+				break;
+			}
+			}
+		}while(pt.squaredNorm()>1);
+		points.row(i) = pt;
+	}
+
+	// //add noise
+	// for(uint p=0; p<points.rows();p++){
+	// 	double u1 = (rand()+0.)/RAND_MAX;
+	// 	double u2 = (rand()+0.)/RAND_MAX;
+	// 	double z1 = sqrt(-2*log(u1))*cos(2*M_PI*u2);
+	// 	double z2 = sqrt(-2*log(u1))*sin(2*M_PI*u2);
+	// 	u1 = (rand()+0.)/RAND_MAX;
+	// 	u2 = (rand()+0.)/RAND_MAX;
+	// 	double z3 = sqrt(-2*log(u1))*cos(2*M_PI*u2);
+	// 	points.row(p) += noise * Eigen::Vector3d(z1,z2,z3);
+	// }
+
+
+	vector<Eigen::Vector3d> ref_points;
+	vector<Eigen::Vector3d> ref_normals;
+	ref_points.push_back(Eigen::Vector3d(-1,0,0));
+	ref_normals.push_back(N0);
+	ref_points.push_back(Eigen::Vector3d(cos(M_PI/3),sin(M_PI/3),0));
+	ref_normals.push_back(N1);
+	ref_points.push_back(Eigen::Vector3d(cos(-M_PI/3),sin(-M_PI/3),0));
+	ref_normals.push_back(N2);
+
+	normals.resize(nb_points,3);
+	for(int p=0; p<nb_points; p++){
+		Eigen::Vector3d pt = points.row(p);
+		double min_d = 1e7;
+		int min_id=0;
+		for(int i=0; i<ref_points.size(); i++){
+			double d = (pt-ref_points[i]).squaredNorm();
+			if(d<min_d){
+				min_d = d;
+				min_id = i;
+			}
+		}
+		normals.row(p) = ref_normals[min_id];
+	}
+
+
+		for(int p=0; p<nb_points; p++){
+			points.row(p) = Rot0_inv_mem * points.row(p).transpose();
+			normals.row(p) = Rot0_inv_mem * normals.row(p).transpose();
+		}
+
+}
+
+void random_rotation(Eigen::MatrixX3d& pc, Eigen::MatrixX3d& normals){
+
+	float theta = (rand()+0.f)/RAND_MAX * 2* 3.14159265f;
+	float phi = (rand()+0.f)/RAND_MAX * 2* 3.14159265f;
+	float psi = (rand()+0.f)/RAND_MAX * 2* 3.14159265f;
+	Eigen::Matrix3d Rt;
+	Eigen::Matrix3d Rph;
+	Eigen::Matrix3d Rps;
+	Rt <<  1, 0, 0,0, cos(theta), -sin(theta),	0, sin(theta), cos(theta);
+	Rph << cos(phi),0, sin(phi),0,1,0,-sin(phi),0, cos(phi);
+	Rps << cos(psi), -sin(psi), 0,	sin(psi), cos(psi),0,0,0,1;
+	Eigen::Matrix3d rMat = Rt*Rph*Rps;
+
+	for(int i=0; i<pc.rows(); i++){
+		pc.row(i) = (rMat*pc.row(i).transpose()).transpose();
+		normals.row(i) = (rMat*normals.row(i).transpose()).transpose();
+	}
+
+}
+
+void add_gaussian_noise(Eigen::MatrixX3d& pc, double sigma){
+
+	for(uint p=0; p<pc.rows();p++){
+
+		double u1 = (rand()+0.)/RAND_MAX;
+		double u2 = (rand()+0.)/RAND_MAX;
+		double z1 = sqrt(-2*log(u1))*cos(2*M_PI*u2);
+		double z2 = sqrt(-2*log(u1))*sin(2*M_PI*u2);
+		u1 = (rand()+0.)/RAND_MAX;
+		u2 = (rand()+0.)/RAND_MAX;
+		double z3 = sqrt(-2*log(u1))*cos(2*M_PI*u2);
+		pc.row(p) += sigma * Eigen::Vector3d(z1,z2,z3);
+	}
+
+}
+
+void add_gaussian_noise_percentage(Eigen::MatrixX3d& pc, int percentage){
+	//add gaussian noise as a parcentage of the average distance between points
+
+
+	//cout << "Build Kdtree for points" << endl;
+	kd_tree tree(3, pc, 10 /* max leaf */ );
+	tree.index->buildIndex();
+
+	//compute the average distance
+	double dist = 0;
+	for(int i=0; i<pc.rows(); i++){
+		const Eigen::Vector3d& pt = pc.row(i);
+		vector<long int> pt_neighbors(2);
+		vector<double> distances(2);
+		tree.index->knnSearch(&pt[0], 2, &pt_neighbors[0], &distances[0]);
+		dist += sqrt(distances[0]);
+		dist += sqrt(distances[1]);
+	}
+	dist /= pc.rows();
+
+	dist = dist * percentage / 100.;
+	//cout << "Noise scale : " << dist << endl;
+	add_gaussian_noise(pc, dist);
+
+}
+
+int NormEst::generate_training_accum_random_corner(int noise_val, int n_points, double* array, double* array_gt){
+
+	K_aniso = 5;
+	T = 1000;
+	A = 33;
+	is_tree_initialized = false;
+
+	int N = 5000; // size of the point cloud to be generated
+    double angle_max = 1.; // max angle of the angle
+    double angle_min = 0.2; // min angle of the points cloud
+	double max_square_dist = 0.02; // maximal square dist to accept point (be sure it include a corner or an edge)
+
+	// generate angle point cloud
+	double angle = (rand()+0.)/RAND_MAX;
+	angle = angle*(angle_max-angle_min)+angle_min;
+	double val = (rand()+0.)/RAND_MAX;
+	int noise = int(val*val*200);
+	if(noise_val>=0){
+		noise = noise_val;
+	}
+	MatrixX3 normals_gt;
+	create_angle(_pc, normals_gt, angle, N);
+	random_rotation(_pc, normals_gt);
+	add_gaussian_noise_percentage(_pc, noise);
+
+	// TODO
+	//set_Ks(Ks);
+
+	// initialize acquisition
+	initialize();
+
+	// create a list of point indices
+	vector<int> point_ids;
+	for(int pt_id=0; pt_id < _pc.rows(); pt_id++){
+		const Vector3& pt = _pc.row(pt_id); //reference to the current point
+		if(pt.squaredNorm() > max_square_dist){continue;}
+		point_ids.push_back(pt_id);
+	}
+
+	// randomly select good points
+	if(point_ids.size() > n_points){
+		for(int i=0; i<n_points; i++){
+			int temp_id = rand()%point_ids.size();
+			int temp = point_ids[temp_id];
+			point_ids[temp_id] = point_ids[i];
+			point_ids[i] = temp;
+		}
+		point_ids.resize(n_points);
+	}
+
+	// construct the batch
+
+    unsigned int randPos2 = randPos;
+
+    accums.resize(n_points);
+
+
+    for(int pt_i=0; pt_i<point_ids.size(); pt_i ++){
+        int pt_id = point_ids[pt_i];
+
+        //reference to the current point
+        const Vector3& pt = _pc.row(pt_id);
+
+        //get the max neighborhood
+        vector<long int> indices;
+        vector<double> distances;
+        searchKNN(*tree,pt,maxK, indices, distances);
+
+        // for knn search distances appear to be sorted
+        sort_indices_by_distances(indices, distances);
+
+        if(use_aniso){
+            for(int k_id=0; k_id<Ks.size(); k_id++){
+                //fill the patch and get the rotation matrix
+                HoughAccum hd;
+                if(k_id==0){
+                    fill_accum_aniso(hd,indices,Ks[k_id], this, randPos2, proba_vector);
+                    accums[pt_i] = hd;
+                }else{
+                    fill_accum_aniso(hd,indices,Ks[k_id], this, randPos2,  proba_vector, false, accums[pt_i].P);
+                }
+
+                for(int i=0; i<A*A; i++){
+                    array[A*A*Ks.size()*(pt_i)+ A*A*k_id +i] = hd.accum[i];
+                }
+            }
+        }else{
+
+            for(int k_id=0; k_id<Ks.size(); k_id++){
+                //fill the patch and get the rotation matrix
+                HoughAccum hd;
+                if(k_id==0){
+                    fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos2);
+                    accums[pt_i] = hd;
+                }else{
+                    fill_accum_not_aniso(hd,indices,Ks[k_id], this, randPos2, false, accums[pt_i].P);
+                }
+
+                for(int i=0; i<A*A; i++){
+                    array[A*A*Ks.size()*(pt_i)+ A*A*k_id +i] = hd.accum[i];
+                }
+            }
+        }
+		Vector3 nl = normals_gt.row(pt_id).transpose();
+		nl.normalize();
+		nl = accums[pt_i].P*nl;
+		if(nl.dot(Vector3(0,0,1))<0) nl*=-1;
+		array_gt[2*pt_i+0] = nl[0];
+		array_gt[2*pt_i+1] = nl[1];
+    }
+
+	return point_ids.size();
 }

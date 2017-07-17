@@ -124,3 +124,16 @@ cdef class NormalEstimatorHoughCNN:
     def set_normals(self, normals):
         cdef np.ndarray[np.float64_t, ndim = 2] d2 = normals
         self.thisptr.set_normals(<double *> d2.data, normals.shape[0], normals.shape[1])
+
+    def generate_training_accum_random_corner(self, n_points, noise_val=-1):
+        cdef int npt, ks, A, nv
+        npt = n_points
+        nv = noise_val
+        ks= self.get_Ks_size()
+        A = self.get_A()
+        d = np.zeros((npt,ks,A,A), dtype=np.double)
+        t = np.zeros((npt,2), dtype=np.double)
+        cdef np.ndarray[np.float64_t, ndim = 4] d2 = d
+        cdef np.ndarray[np.float64_t, ndim = 2] t2 = t
+        nbr = self.thisptr.generate_training_accum_random_corner(nv,npt, <double *> d2.data, <double *> t2.data)
+        return nbr, d,t

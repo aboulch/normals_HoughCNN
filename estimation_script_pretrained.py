@@ -44,12 +44,12 @@ if scale_number == 1:
     model = model_1s.load_model("path_to_model_1_scale.pth")
     mean = load_lua("path_to_lean_1_scale.t7").numpy()
 elif scale_number == 3:
-    Ks=np.array([K/2,K,K*2], dtype=np.int)
+    Ks=np.array([K,K/2,K*2], dtype=np.int)
     import python.model_3s as model_3s
     model = model_3s.load_model("path_to_model_3_scales.pth")
     mean = load_lua("path_to_lean_3_scales.t7").numpy()
 elif scale_number == 5:
-    Ks=np.array([K/4,K/2,K,K*2,K*4], dtype=np.int)
+    Ks=np.array([K,K/4,K/2,K*2,K*4], dtype=np.int)
     import python.model_5s as model_5s
     model = model_5s.load_model("path_to_model_5_scales.pth")
     mean = load_lua("path_to_lean_5_scales.t7").numpy()
@@ -76,8 +76,7 @@ for pt_id in tqdm(range(0,estimator.size(), batch_size)):
         batch_th = batch_th.cuda()
     estimations = model.forward(batch_th)
     estimations = estimations.cpu().data.numpy()
-    estimations = np.zeros((bs,2))
-    estimator.set_batch(pt_id,bs,estimations)
+    estimator.set_batch(pt_id,bs,estimations.astype(np.float64))
 
 # save the estimator
 estimator.saveXYZ(output_filename)
