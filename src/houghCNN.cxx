@@ -77,10 +77,13 @@ inline void fill_accum_aniso(HoughAccum& hd, std::vector<long int>& nbh, int nbh
 	}
 	mean /= mean_sum;
 
+	float cov_sum = 0;
 	for(int i=0; i<nbh_size; i++){
 		Vector3 v =  _pc.row(nbh[i]).transpose()-mean;
-		cov+= v*v.transpose()*proba_vector[nbh[i]];
+		cov+= v*v.transpose()*proba_vector[nbh[i]]*proba_vector[nbh[i]];
+		cov_sum += proba_vector[nbh[i]]*proba_vector[nbh[i]];
 	}
+	cov /= cov_sum;
 
 	Eigen::JacobiSVD<Matrix3> svd(cov, Eigen::ComputeFullV);
 	if(compute_P){
