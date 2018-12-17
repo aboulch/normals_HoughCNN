@@ -58,4 +58,4 @@ The license is [here](LICENSE.md).
 
 # Author
 
-[Alexandre Boulch](https://sites.google.com/view/boulch)
+[Alexandre Boulch](www.boulch.eu)

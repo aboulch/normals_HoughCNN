@@ -33,7 +33,7 @@ using std::string;
 
 
 typedef typename nanoflann::KDTreeEigenMatrixAdaptor< MatrixX3 > kd_tree;
-
+ 
 int NormEst::size(){
 	return _pc.rows();
 }
@@ -130,7 +130,7 @@ inline void fill_accum_aniso(HoughAccum& hd, std::vector<long int>& nbh, int nbh
 		//get a triplet of points in the neighborhood
 		std::vector<int> pt_ids(3);
 		do{
-			for(int j=0; j<pt_ids.size(); j++){
+			for(uint j=0; j<pt_ids.size(); j++){
 
 				// select a point
 				float pos = float(rand_ints[randPos])/RAND_MAX;
@@ -264,7 +264,7 @@ inline void fill_accum_not_aniso(HoughAccum& hd, std::vector<long int>& nbh, int
 		//get a triplet of points in the neighborhood
 		std::vector<int> pt_ids(3);
 		do{
-			for(int j=0; j<pt_ids.size(); j++){
+			for(uint j=0; j<pt_ids.size(); j++){
 
 				pt_ids[j] = rand_ints[randPos]%nbh_size;
 				randPos = (randPos+1)%rand_ints.size();
@@ -335,7 +335,7 @@ inline double searchKNN(const kd_tree& tree, const Vector3& pt, int K, vector<lo
 	distances.resize(K);
 	tree.index->knnSearch(&pt[0], K, &indices[0], &distances[0]);
 	double r=0;
-	for(int i=0; i<distances.size(); i++)
+	for(uint i=0; i<distances.size(); i++)
 		if(distances[i]>r) r=distances[i];
 	return r;
 }
@@ -347,12 +347,12 @@ bool compare_pair_int_double(const pair<long int,double>& p1, const pair<long in
 
 inline void sort_indices_by_distances(vector<long int>& indices, const vector<double>& distances){
     vector< pair<long int,double> > v(distances.size());
-    for(int i=0; i<indices.size(); i++){
+    for(uint i=0; i<indices.size(); i++){
         v[i].first = indices[i];
         v[i].second = distances[i];
     }
     sort(v.begin(), v.end(), compare_pair_int_double);
-    for(int i=0; i<indices.size(); i++){
+    for(uint i=0; i<indices.size(); i++){
         indices[i] = v[i].first;
     }
 }
@@ -361,7 +361,7 @@ void NormEst::initialize(){
 
     // compute max K
     maxK = 0;
-    for(int i=0; i<Ks.size(); i++)
+    for(uint i=0; i<Ks.size(); i++)
         if(maxK<Ks[i])
             maxK = Ks[i];
 
@@ -397,7 +397,7 @@ void NormEst::initialize(){
     		searchKNN(*tree,pt,K_aniso, indices, distances);
 
     		float md = 0;
-    		for(int i=0; i<distances.size(); i++)
+    		for(uint i=0; i<distances.size(); i++)
     			if(md<distances[i])
     				md = distances[i];
 
@@ -430,7 +430,7 @@ void NormEst::get_batch(int batch_id, int batch_size, double* array) { // array 
         sort_indices_by_distances(indices, distances);
 
         if(use_aniso){
-            for(int k_id=0; k_id<Ks.size(); k_id++){
+            for(uint k_id=0; k_id<Ks.size(); k_id++){
                 //fill the patch and get the rotation matrix
                 HoughAccum hd;
                 if(k_id==0){
@@ -446,7 +446,7 @@ void NormEst::get_batch(int batch_id, int batch_size, double* array) { // array 
             }
         }else{
 
-            for(int k_id=0; k_id<Ks.size(); k_id++){
+            for(uint k_id=0; k_id<Ks.size(); k_id++){
                 //fill the patch and get the rotation matrix
                 HoughAccum hd;
                 if(k_id==0){
@@ -674,7 +674,7 @@ void create_angle(Eigen::MatrixX3d& points, Eigen::MatrixX3d& normals, double an
 		Eigen::Vector3d pt = points.row(p);
 		double min_d = 1e7;
 		int min_id=0;
-		for(int i=0; i<ref_points.size(); i++){
+		for(uint i=0; i<ref_points.size(); i++){
 			double d = (pt-ref_points[i]).squaredNorm();
 			if(d<min_d){
 				min_d = d;
@@ -705,7 +705,7 @@ void random_rotation(Eigen::MatrixX3d& pc, Eigen::MatrixX3d& normals){
 	Rps << cos(psi), -sin(psi), 0,	sin(psi), cos(psi),0,0,0,1;
 	Eigen::Matrix3d rMat = Rt*Rph*Rps;
 
-	for(int i=0; i<pc.rows(); i++){
+	for(uint i=0; i<pc.rows(); i++){
 		pc.row(i) = (rMat*pc.row(i).transpose()).transpose();
 		normals.row(i) = (rMat*normals.row(i).transpose()).transpose();
 	}
@@ -794,7 +794,7 @@ int NormEst::generate_training_accum_random_corner(int noise_val, int n_points, 
 	}
 
 	// randomly select good points
-	if(point_ids.size() > n_points){
+	if(int(point_ids.size()) > n_points){
 		for(int i=0; i<n_points; i++){
 			int temp_id = rand()%point_ids.size();
 			int temp = point_ids[temp_id];
@@ -811,7 +811,7 @@ int NormEst::generate_training_accum_random_corner(int noise_val, int n_points, 
     accums.resize(n_points);
 
 
-    for(int pt_i=0; pt_i<point_ids.size(); pt_i ++){
+    for(uint pt_i=0; pt_i<point_ids.size(); pt_i ++){
         int pt_id = point_ids[pt_i];
 
         //reference to the current point
@@ -826,7 +826,7 @@ int NormEst::generate_training_accum_random_corner(int noise_val, int n_points, 
         sort_indices_by_distances(indices, distances);
 
         if(use_aniso){
-            for(int k_id=0; k_id<Ks.size(); k_id++){
+            for(uint k_id=0; k_id<Ks.size(); k_id++){
                 //fill the patch and get the rotation matrix
                 HoughAccum hd;
                 if(k_id==0){
@@ -842,7 +842,7 @@ int NormEst::generate_training_accum_random_corner(int noise_val, int n_points, 
             }
         }else{
 
-            for(int k_id=0; k_id<Ks.size(); k_id++){
+            for(uint k_id=0; k_id<Ks.size(); k_id++){
                 //fill the patch and get the rotation matrix
                 HoughAccum hd;
                 if(k_id==0){

@@ -54,11 +54,9 @@ private:
 	MatrixX3 _pc; //reference to the point cloud
 	MatrixX3 _normals; //reference to the normal cloud
 
-	int T; //number of triplets to pick, default is 700
-
-	int K_aniso;
-
-	int A; //side_size of accumulator
+	int T=1000; //number of triplets to pick, default is 700
+	int K_aniso=5;
+	int A=33; //side_size of accumulator
 
 	std::vector<float> proba_vector;
 	std::vector<int> counts_generated_elems;
@@ -77,7 +75,7 @@ public:
 
 	int maxK;
 	kd_tree* tree;
-	bool is_tree_initialized;
+	bool is_tree_initialized=false;
 	unsigned int randPos;
 	std::vector<HoughAccum> accums;
 
@@ -87,8 +85,7 @@ public:
 
 	std::vector<unsigned int> rand_ints;
 
-	NormEst():
-		K_aniso(5),T(1000),A(33), is_tree_initialized(false){}
+	NormEst(){}
 
 	~NormEst(){
 		if(is_tree_initialized){
@@ -135,14 +132,14 @@ public:
 		}
 		istr.close();
 		_pc.resize(points.size(),3);
-		for(size_t i=0; i<points.size(); i++){
+		for(uint i=0; i<points.size(); i++){
 			_pc.row(i) = points[i];
 		}
 	}
 
 	void saveXYZ(const std::string& filename){
 		std::ofstream ofs(filename.c_str());
-		for(size_t i=0; i<_pc.rows(); i++){
+		for(int i=0; i<_pc.rows(); i++){
 			ofs << _pc(i,0) << " ";
 			ofs << _pc(i,1) << " ";
 			ofs << _pc(i,2) << " ";
