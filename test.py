@@ -40,18 +40,18 @@ model = None
 if scale_number == 1:
     Ks=np.array([K], dtype=np.int)
     import models.model_1s as model_1s
-    model = model_1s.load_model("/media/data/research/normals_HoughCNN/model_1s_boulch_SGP2016/model.pth")
-    mean = np.load("/media/data/research/normals_HoughCNN/model_1s_boulch_SGP2016/mean.npz")["arr_0"]
+    model = model_1s.load_model("path_to_model_1s/model.pth")
+    mean = np.load("path_to_model_1s/mean.npz")["arr_0"]
 elif scale_number == 3:
     Ks=np.array([K,K/2,K*2], dtype=np.int)
     import models.model_3s as model_3s
-    model = model_3s.load_model("/media/data/research/normals_HoughCNN/model_3s_boulch_SGP2016/model.pth")
-    mean = np.load("/media/data/research/normals_HoughCNN/model_3s_boulch_SGP2016/mean.npz")["arr_0"]
+    model = model_3s.load_model("path_to_model_3s/model.pth")
+    mean = np.load("path_to_model_1s/mean.npz")["arr_0"]
 elif scale_number == 5:
     Ks=np.array([K,K/4,K/2,K*2,K*4], dtype=np.int)
     import models.model_5s as model_5s
-    model = model_5s.load_model("/media/data/research/normals_HoughCNN/model_5s_boulch_SGP2016/model.pth")
-    mean = np.load("/media/data/research/normals_HoughCNN/model_5s_boulch_SGP2016/mean.npz")["arr_0"]
+    model = model_5s.load_model("path_to_model_5s/model.pth")
+    mean = np.load("path_to_model_5s/mean.npz")["arr_0"]
 
 # set the neighborhood size
 estimator.set_Ks(Ks)
