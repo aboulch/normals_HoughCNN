@@ -1,6 +1,5 @@
-nanoflann.hpp
-Eigen/
 build/
+lib/
 *~
 *.so
 __pycache__/

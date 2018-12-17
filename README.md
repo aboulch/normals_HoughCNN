@@ -9,22 +9,19 @@ Please acknowledge our the reference paper :
 
 # Dependencies
 
-- Eigen and nanoflann (assumed to be in the include folder)
-- CMake
+- Eigen and nanoflann (in the third_party_includes folder)
+- TQDM
 - Cython
 - PyTorch
 
 GPU support: NVIDIA GPU
 
-
+The code has been tested on Ubuntu 18.04 with Anaconda.
 
 # Building the python library
 
-    cd path_to_repository
-    mkdir build
-    cd build
-    cmake ..
-    make
+    cd path_to_repository/python
+    python setup.py install --home "."
 
 It will build a library in the python folder of the repository.
 
@@ -39,7 +36,7 @@ The models for previous versions (Lua Torch) can be downloaded here: [1 scale](h
 
 ### Usage
 
-Once the library is built. You can use the **estimation_script_pretrained.py** to test the estimation.
+Once the library is built. You can use the **test.py** to test the estimation.
 The **cube_100k.xyz** file is located in the test directory.
 
 **Note:** the input file must currently be at xyz format, it is possible to generate such file with Meshlab.
@@ -49,9 +46,8 @@ The **cube_100k.xyz** file is located in the test directory.
 # Training from scratch
 
 We provide the scripts for generating a training set and training a new model.
-The script **generate_training_set.py** performs theses task.
+The script **train.py** performs theses task.
 You can choose the scale number (1, 3 or 5) as in the paper.
-At inference, please use the **estimation_script_trained.py** instead of **estimation_script_pretrained.py**, the only difference is that the mean is now saved in a numpy format.
 
 *Note*: This is not the original training script from the related paper, but it should be similar. If you spot malfunctioning code or unexpected behavior, please contact the author.
 
