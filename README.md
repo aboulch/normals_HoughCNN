@@ -28,11 +28,10 @@ It will build a library in the python folder of the repository.
 # Pretrained networks
 
 Pretrained networks can be downloaded for 1, 3 and 5 scales (the models of the paper):
-* [1 scale](https://drive.google.com/open?id=0B6IogDVqG75WTWQ3cVZOdHBPTDA)
-* [3 scales](https://drive.google.com/open?id=0B6IogDVqG75WclV4czgtVDBoNkE)
-* [5 scales](https://drive.google.com/open?id=0B6IogDVqG75WMVltdDYybS1VNGM)
+* [1 scale](https://github.com/aboulch/normals_HoughCNN/releases/download/v0.1.1/model_1s_boulch_SGP2016.zip)
+* [3 scales](https://github.com/aboulch/normals_HoughCNN/releases/download/v0.1.1/model_3s_boulch_SGP2016.zip)
+* [5 scales](https://github.com/aboulch/normals_HoughCNN/releases/download/v0.1.1/model_5s_boulch_SGP2016.zip)
 
-The models for previous versions (Lua Torch) can be downloaded here: [1 scale](https://drive.google.com/open?id=0B6IogDVqG75WOFlQNVVtc1lfNW8), [3 scales](https://drive.google.com/open?id=0B6IogDVqG75WR2Z4NlJhclIzTjA) and [5 scales](https://drive.google.com/open?id=0B6IogDVqG75WMVltdDYybS1VNGM).
 
 ### Usage
 
